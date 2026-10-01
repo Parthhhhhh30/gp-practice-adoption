@@ -1,6 +1,8 @@
 from __future__ import annotations
 import json
 import os
+import re
+
 import requests
 
 MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
@@ -14,12 +16,24 @@ def _generate(prompt: str) -> str:
     key = os.getenv("GEMINI_API_KEY")
     if not key:
         raise RuntimeError("GEMINI_API_KEY is not configured")
+
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={key}"
-    payload = {"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.2}}
-    r = requests.post(url, json=payload, timeout=45)
-    r.raise_for_status()
-    data = r.json()
-    return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"thinkingConfig": {"thinkingLevel": "low"}},
+    }
+    response = requests.post(url, json=payload, timeout=45)
+    response.raise_for_status()
+    data = response.json()
+
+    candidates = data.get("candidates") or []
+    if not candidates:
+        raise RuntimeError("Gemini returned no candidate output")
+    parts = candidates[0].get("content", {}).get("parts", [])
+    text_parts = [part.get("text", "") for part in parts if part.get("text")]
+    if not text_parts:
+        raise RuntimeError("Gemini returned no text output")
+    return "\n".join(text_parts).strip()
 
 
 def draft_account_brief(practice: dict, tags: list[str]) -> str:
@@ -43,8 +57,10 @@ Deterministic signal tags: {tags}
 def draft_upsell_message(account: dict, tags: list[str]) -> str:
     if not available():
         return (
-            f"Hi — based on our current account context, it may be useful to review whether your access workflow could benefit from a Navigator discovery session. "
-            f"The demo flags: {', '.join(tags)}. I’d suggest a short call to understand the current workflow before making any recommendation."
+            "Hi — based on our current account context, it may be useful to review whether your access workflow "
+            "could benefit from a Navigator discovery session. "
+            f"The demo flags: {', '.join(tags)}. I’d suggest a short call to understand the current workflow "
+            "before making any recommendation."
         )
     prompt = f"""Draft a concise B2B customer-success upsell message for a GP practice.
 The account/customer fields are synthetic demo data; public signal tags are real-data-derived when available.
@@ -54,6 +70,22 @@ Synthetic account context: {account}
 Public signal tags: {tags}
 """
     return _generate(prompt)
+
+
+def _parse_ticket_json(raw: str) -> dict:
+    cleaned = raw.strip()
+    cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s*```$", "", cleaned)
+    payload = json.loads(cleaned)
+    required = {"problem", "category", "severity", "evidence", "suggested_outcome", "confidence"}
+    missing = required.difference(payload)
+    if missing:
+        raise ValueError("Ticket output missing fields: " + ", ".join(sorted(missing)))
+    if payload["severity"] not in {"Low", "Medium", "High"}:
+        raise ValueError("Ticket severity was outside the allowed set")
+    if payload["confidence"] not in {"Low", "Medium", "High"}:
+        raise ValueError("Ticket confidence was outside the allowed set")
+    return payload
 
 
 def extract_product_ticket(transcript: str) -> dict:
@@ -72,6 +104,4 @@ Return STRICT JSON with keys: problem, category, severity, evidence, suggested_o
 Severity must be Low, Medium, or High. Confidence must be Low, Medium, or High.
 Transcript: {transcript}
 """
-    raw = _generate(prompt)
-    raw = raw.strip().removeprefix("```json").removesuffix("```").strip()
-    return json.loads(raw)
+    return _parse_ticket_json(_generate(prompt))
