@@ -14,7 +14,7 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements.txt
       - run: pytest -q
-      - run: python -m py_compile app.py workspace.py rules.py data_pipeline.py synthetic.py ai_layer.py scripts/verify_live_sources.py scripts/verify_streamlit_session.py
+      - run: python -m py_compile app.py workspace.py rules.py data_pipeline.py synthetic.py ai_layer.py scripts/verify_live_sources.py scripts/verify_streamlit_session.py scripts/verify_gemini.py
       - name: Smoke test Streamlit runtime
         run: |
           python -m streamlit run app.py --server.headless true --server.port 8501 > /tmp/streamlit.log 2>&1 &
