@@ -14,7 +14,7 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements.txt
       - run: pytest -q
-      - run: python -m py_compile app.py rules.py data_pipeline.py synthetic.py ai_layer.py
+      - run: python -m py_compile app.py rules.py data_pipeline.py synthetic.py ai_layer.py scripts/verify_live_sources.py
       - name: Smoke test Streamlit runtime
         run: |
           python -m streamlit run app.py --server.headless true --server.port 8501 > /tmp/streamlit.log 2>&1 &
@@ -29,3 +29,17 @@ jobs:
           cat /tmp/streamlit.log
           kill "$pid" || true
           exit 1
+
+  live-public-data:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Verify current public NHS / GPPS sources
+        run: python scripts/verify_live_sources.py
