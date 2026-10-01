@@ -10,6 +10,17 @@ from bs4 import BeautifulSoup
 
 GPPS_URL = "https://www.gp-patient.co.uk/FileDownload/Download?fileRedirect=2026%2Fsurvey-results%2Fpractice-results%2Fpractice-data-csv%2FGPPS_2026_Practice_data_%28weighted%29_%28csv%29_PUBLIC.csv"
 REGISTRATION_PAGE = "https://digital.nhs.uk/data-and-information/publications/statistical/patients-registered-at-a-gp-practice/september-2026"
+HTTP_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/154 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-GB,en;q=0.9",
+}
+
+
+def _get(url: str, timeout: int = 30) -> requests.Response:
+    response = requests.get(url, timeout=timeout, headers=HTTP_HEADERS)
+    response.raise_for_status()
+    return response
 
 
 def _normalise_percent(series: pd.Series) -> pd.Series:
@@ -34,15 +45,6 @@ def _pick(columns, patterns):
 
 
 def _easy_summary(df: pd.DataFrame, stem: str, legacy_patterns: list[str]) -> pd.Series:
-    """Return % Easy for 2026 GPPS Q1-Q3.
-
-    In the published 2026 practice CSV the six response options are stored separately.
-    Option 1 is 'I haven't tried'; options 2 and 3 are 'Very easy' and 'Fairly easy'.
-    The GPPS reporting methodology defines the summary 'Easy' result as those two
-    positive responses, using the evaluated base that excludes 'I haven't tried'.
-    Older/alternate exports may expose a combined summary column, so we retain that
-    as a compatibility path.
-    """
     combined = _pick(df.columns, legacy_patterns)
     if combined is not None:
         return _normalise_percent(df[combined])
@@ -62,21 +64,9 @@ def parse_gpps(df: pd.DataFrame) -> pd.DataFrame:
     name = _pick(df.columns, ["ad_practicename", "practice_name", "prac_name"])
     ics = _pick(df.columns, ["ad_icsname", "ics_name", "icb_name"])
 
-    phone_easy = _easy_summary(
-        df,
-        "localgpservicesphone",
-        ["q1_12pct", "q1_1_2pct", r"^q1.*12pct$"],
-    )
-    website_easy = _easy_summary(
-        df,
-        "localgpserviceswebsite",
-        ["q2_12pct", "q2_1_2pct", r"^q2.*12pct$"],
-    )
-    app_easy = _easy_summary(
-        df,
-        "localgpservicesapp",
-        ["q3_12pct", "q3_1_2pct", r"^q3.*12pct$"],
-    )
+    phone_easy = _easy_summary(df, "localgpservicesphone", ["q1_12pct", "q1_1_2pct", r"^q1.*12pct$"])
+    website_easy = _easy_summary(df, "localgpserviceswebsite", ["q2_12pct", "q2_1_2pct", r"^q2.*12pct$"])
+    app_easy = _easy_summary(df, "localgpservicesapp", ["q3_12pct", "q3_1_2pct", r"^q3.*12pct$"])
 
     missing = [
         label
@@ -105,14 +95,12 @@ def parse_gpps(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def fetch_gpps(timeout=30) -> pd.DataFrame:
-    r = requests.get(GPPS_URL, timeout=timeout)
-    r.raise_for_status()
+    r = _get(GPPS_URL, timeout=timeout)
     return parse_gpps(pd.read_csv(io.BytesIO(r.content), low_memory=False))
 
 
 def _find_download_link(page_url: str, text_fragment: str, timeout=30) -> str:
-    r = requests.get(page_url, timeout=timeout)
-    r.raise_for_status()
+    r = _get(page_url, timeout=timeout)
     soup = BeautifulSoup(r.text, "html.parser")
     for a in soup.find_all("a", href=True):
         text = " ".join(a.stripped_strings)
@@ -137,8 +125,7 @@ def parse_registered_patients(df: pd.DataFrame) -> pd.DataFrame:
 
 def fetch_registered_patients(timeout=30) -> pd.DataFrame:
     url = _find_download_link(REGISTRATION_PAGE, "Totals (GP practice-all persons)", timeout=timeout)
-    r = requests.get(url, timeout=timeout)
-    r.raise_for_status()
+    r = _get(url, timeout=timeout)
     with zipfile.ZipFile(io.BytesIO(r.content)) as zf:
         csvs = [n for n in zf.namelist() if n.lower().endswith(".csv")]
         if not csvs:
