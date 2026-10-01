@@ -18,39 +18,89 @@ def _normalise_percent(series: pd.Series) -> pd.Series:
         return s
     if s.dropna().quantile(0.9) <= 1.01:
         s = s * 100
-    return s.where(s >= 0)
+    return s.where((s >= 0) & (s <= 100))
 
 
 def _pick(columns, patterns):
-    lower = {c.lower(): c for c in columns}
+    lower = {str(c).lower(): c for c in columns}
     for p in patterns:
         if p.lower() in lower:
             return lower[p.lower()]
     for c in columns:
-        lc = c.lower()
+        lc = str(c).lower()
         if any(re.search(p, lc) for p in patterns if p.startswith("^")):
             return c
     return None
 
 
+def _easy_summary(df: pd.DataFrame, stem: str, legacy_patterns: list[str]) -> pd.Series:
+    """Return % Easy for 2026 GPPS Q1-Q3.
+
+    In the published 2026 practice CSV the six response options are stored separately.
+    Option 1 is 'I haven't tried'; options 2 and 3 are 'Very easy' and 'Fairly easy'.
+    The GPPS reporting methodology defines the summary 'Easy' result as those two
+    positive responses, using the evaluated base that excludes 'I haven't tried'.
+    Older/alternate exports may expose a combined summary column, so we retain that
+    as a compatibility path.
+    """
+    combined = _pick(df.columns, legacy_patterns)
+    if combined is not None:
+        return _normalise_percent(df[combined])
+
+    very_easy = _pick(df.columns, [f"{stem}_2.pct"])
+    fairly_easy = _pick(df.columns, [f"{stem}_3.pct"])
+    if very_easy is None or fairly_easy is None:
+        return pd.Series(pd.NA, index=df.index, dtype="Float64")
+
+    first = _normalise_percent(df[very_easy])
+    second = _normalise_percent(df[fairly_easy])
+    return (first + second).clip(lower=0, upper=100)
+
+
 def parse_gpps(df: pd.DataFrame) -> pd.DataFrame:
-    code = _pick(df.columns, ["practice_code", "prac_code"])
-    name = _pick(df.columns, ["practice_name", "prac_name"])
-    ics = _pick(df.columns, ["ics_name", "icb_name"])
-    phone = _pick(df.columns, ["q1_12pct", "q1_1_2pct", r"^q1.*12pct$"])
-    website = _pick(df.columns, ["q2_12pct", "q2_1_2pct", r"^q2.*12pct$"])
-    app = _pick(df.columns, ["q3_12pct", "q3_1_2pct", r"^q3.*12pct$"])
-    missing = [label for label, col in {"practice code": code, "practice name": name, "phone ease": phone}.items() if col is None]
+    code = _pick(df.columns, ["ad_practicecode", "practice_code", "prac_code"])
+    name = _pick(df.columns, ["ad_practicename", "practice_name", "prac_name"])
+    ics = _pick(df.columns, ["ad_icsname", "ics_name", "icb_name"])
+
+    phone_easy = _easy_summary(
+        df,
+        "localgpservicesphone",
+        ["q1_12pct", "q1_1_2pct", r"^q1.*12pct$"],
+    )
+    website_easy = _easy_summary(
+        df,
+        "localgpserviceswebsite",
+        ["q2_12pct", "q2_1_2pct", r"^q2.*12pct$"],
+    )
+    app_easy = _easy_summary(
+        df,
+        "localgpservicesapp",
+        ["q3_12pct", "q3_1_2pct", r"^q3.*12pct$"],
+    )
+
+    missing = [
+        label
+        for label, value in {
+            "practice code": code,
+            "practice name": name,
+            "phone ease": phone_easy.notna().any(),
+        }.items()
+        if value is None or value is False
+    ]
     if missing:
         raise ValueError("GPPS columns not recognised: " + ", ".join(missing))
-    out = pd.DataFrame({
-        "practice_code": df[code].astype(str).str.strip(),
-        "practice_name": df[name].astype(str).str.strip(),
-        "ics_name": df[ics].astype(str).str.strip() if ics else "",
-        "phone_easy_pct": _normalise_percent(df[phone]),
-        "website_easy_pct": _normalise_percent(df[website]) if website else pd.NA,
-        "app_easy_pct": _normalise_percent(df[app]) if app else pd.NA,
-    })
+
+    out = pd.DataFrame(
+        {
+            "practice_code": df[code].astype(str).str.strip(),
+            "practice_name": df[name].astype(str).str.strip(),
+            "ics_name": df[ics].astype(str).str.strip() if ics else "",
+            "phone_easy_pct": phone_easy,
+            "website_easy_pct": website_easy,
+            "app_easy_pct": app_easy,
+        }
+    )
+    out = out[out["practice_code"].ne("") & out["practice_code"].ne("nan")]
     return out.drop_duplicates("practice_code")
 
 
@@ -76,10 +126,12 @@ def parse_registered_patients(df: pd.DataFrame) -> pd.DataFrame:
     n = _pick(df.columns, ["number_of_patients", "number of patients", "patients", r"^.*number.*patients.*$"])
     if code is None or n is None:
         raise ValueError("Registered-patient columns not recognised")
-    out = pd.DataFrame({
-        "practice_code": df[code].astype(str).str.strip(),
-        "list_size": pd.to_numeric(df[n], errors="coerce"),
-    })
+    out = pd.DataFrame(
+        {
+            "practice_code": df[code].astype(str).str.strip(),
+            "list_size": pd.to_numeric(df[n], errors="coerce"),
+        }
+    )
     return out.dropna(subset=["list_size"]).drop_duplicates("practice_code")
 
 
