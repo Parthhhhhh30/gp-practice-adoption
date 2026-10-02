@@ -9,7 +9,8 @@ from typing import Any
 import requests
 
 MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
-FALLBACK_MODELS = ("gemini-3.7-flash",)\nBASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+FALLBACK_MODELS = ("gemini-3.7-flash",)
+BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 TICKET_SCHEMA = {
     "type": "object",
