@@ -72,7 +72,7 @@ export GEMINI_API_KEY="..."
 
 ```bash
 pytest -q
-python -m py_compile app.py rules.py data_pipeline.py synthetic.py ai_layer.py scripts/verify_live_sources.py
+python -m py_compile app.py workspace.py rules.py data_pipeline.py synthetic.py ai_layer.py scripts/verify_live_sources.py scripts/verify_streamlit_session.py scripts/verify_gemini.py
 python scripts/verify_live_sources.py
 ```
 
