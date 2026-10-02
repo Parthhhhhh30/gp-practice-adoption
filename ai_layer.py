@@ -60,10 +60,9 @@ def _generate(prompt: str, response_schema: dict[str, Any] | None = None) -> str
     if not key:
         raise RuntimeError("GEMINI_API_KEY is not configured")
 
-    url = f"{BASE_URL}/{MODEL}:generateContent"
     generation_config: dict[str, Any] = {
-        # These tasks are short drafting/extraction operations. Low thinking reduces
-        # latency/cost without moving business decisions into the model.
+        # These are short drafting/extraction tasks. Low thinking keeps latency and
+        # cost low while deterministic logic remains outside the model.
         "thinkingConfig": {"thinkingLevel": "low"},
     }
     if response_schema is not None:
@@ -78,28 +77,65 @@ def _generate(prompt: str, response_schema: dict[str, Any] | None = None) -> str
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": generation_config,
     }
-    response = requests.post(
-        url,
-        headers={"x-goog-api-key": key, "Content-Type": "application/json"},
-        json=payload,
-        timeout=45,
+
+    retryable_statuses = {429, 500, 502, 503, 504}
+    models = (MODEL,) + tuple(m for m in FALLBACK_MODELS if m != MODEL)
+    failures: list[str] = []
+
+    for model in models:
+        url = f"{BASE_URL}/{model}:generateContent"
+        # Google documents 503/429 as retryable. Retry the preferred model first,
+        # then fall back to another stable Flash model so a transient capacity event
+        # does not break the operator workflow.
+        for attempt in range(3):
+            try:
+                response = requests.post(
+                    url,
+                    headers={"x-goog-api-key": key, "Content-Type": "application/json"},
+                    json=payload,
+                    timeout=45,
+                )
+                if response.status_code in retryable_statuses:
+                    failures.append(f"{model} HTTP {response.status_code}")
+                    if attempt < 2:
+                        time.sleep(2 ** attempt)
+                        continue
+                    break
+
+                response.raise_for_status()
+                data = response.json()
+                candidates = data.get("candidates") or []
+                if not candidates:
+                    raise RuntimeError("Gemini returned no candidate output")
+
+                finish_reason = candidates[0].get("finishReason")
+                if finish_reason and finish_reason not in {"STOP", "MAX_TOKENS"}:
+                    raise RuntimeError(
+                        f"Gemini generation did not complete normally: {finish_reason}"
+                    )
+
+                parts = candidates[0].get("content", {}).get("parts", [])
+                text_parts = [part.get("text", "") for part in parts if part.get("text")]
+                if not text_parts:
+                    raise RuntimeError("Gemini returned no text output")
+                return "\n".join(text_parts).strip()
+
+            except requests.RequestException as exc:
+                status = getattr(getattr(exc, "response", None), "status_code", None)
+                failures.append(f"{model} {type(exc).__name__}" + (f" HTTP {status}" if status else ""))
+                if status in retryable_statuses and attempt < 2:
+                    time.sleep(2 ** attempt)
+                    continue
+                if status not in retryable_statuses:
+                    raise
+
+        # Move to the next stable model only after the current model exhausted retries.
+
+    detail = "; ".join(failures[-6:]) if failures else "no response details"
+    raise RuntimeError(
+        "Drafting service is temporarily unavailable after retries and stable-model fallbacks. "
+        + detail
     )
-    response.raise_for_status()
-    data = response.json()
-
-    candidates = data.get("candidates") or []
-    if not candidates:
-        raise RuntimeError("Gemini returned no candidate output")
-
-    finish_reason = candidates[0].get("finishReason")
-    if finish_reason and finish_reason not in {"STOP", "MAX_TOKENS"}:
-        raise RuntimeError(f"Gemini generation did not complete normally: {finish_reason}")
-
-    parts = candidates[0].get("content", {}).get("parts", [])
-    text_parts = [part.get("text", "") for part in parts if part.get("text")]
-    if not text_parts:
-        raise RuntimeError("Gemini returned no text output")
-    return "\n".join(text_parts).strip()
 
 
 def connection_check() -> tuple[bool, str]:
