@@ -97,8 +97,9 @@ def _generate(prompt: str, response_schema: dict[str, Any] | None = None) -> str
                     json=payload,
                     timeout=45,
                 )
-                if response.status_code in retryable_statuses:
-                    failures.append(f"{model} HTTP {response.status_code}")
+                status_code = getattr(response, "status_code", 200)
+                if status_code in retryable_statuses:
+                    failures.append(f"{model} HTTP {status_code}")
                     if attempt < 2:
                         time.sleep(2 ** attempt)
                         continue
