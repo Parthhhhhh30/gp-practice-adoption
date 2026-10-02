@@ -47,7 +47,7 @@ See `DATA_SOURCES.md` for the source and limitation log.
 
 ## Drafting assistance
 
-Optional Gemini 3.8 Flash integration supports:
+Gemini drafting is configured on the deployed app and has been exercised successfully. The integration uses retry/backoff for transient 429/5xx failures and a stable Flash fallback so a temporary provider-capacity event does not break the operator workflow. It supports:
 
 - discovery briefs
 - human-review outreach drafts
