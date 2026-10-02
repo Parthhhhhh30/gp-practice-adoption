@@ -102,3 +102,71 @@ def test_generate_adds_structured_output_schema(monkeypatch):
     fmt = captured["json"]["generationConfig"]["responseFormat"]["text"]
     assert fmt["mimeType"] == "application/json"
     assert fmt["schema"]["properties"]["severity"]["enum"] == ["Low", "Medium", "High"]
+
+
+def test_generate_retries_503_then_succeeds(monkeypatch):
+    calls = {"n": 0}
+
+    class Response:
+        def __init__(self, status_code):
+            self.status_code = status_code
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                err = ai_layer.requests.HTTPError(f"{self.status_code}")
+                err.response = self
+                raise err
+
+        def json(self):
+            return {
+                "candidates": [
+                    {"finishReason": "STOP", "content": {"parts": [{"text": "CONNECTED"}]}}
+                ]
+            }
+
+    def fake_post(*args, **kwargs):
+        calls["n"] += 1
+        return Response(503 if calls["n"] < 3 else 200)
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr(ai_layer.requests, "post", fake_post)
+    monkeypatch.setattr(ai_layer.time, "sleep", lambda *_: None)
+
+    assert ai_layer._generate("hello") == "CONNECTED"
+    assert calls["n"] == 3
+
+
+def test_generate_falls_back_after_preferred_model_503(monkeypatch):
+    urls = []
+
+    class Response:
+        def __init__(self, status_code, text=""):
+            self.status_code = status_code
+            self._text = text
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                err = ai_layer.requests.HTTPError(f"{self.status_code}")
+                err.response = self
+                raise err
+
+        def json(self):
+            return {
+                "candidates": [
+                    {"finishReason": "STOP", "content": {"parts": [{"text": self._text}]}}
+                ]
+            }
+
+    def fake_post(url, **kwargs):
+        urls.append(url)
+        if "gemini-3.8-flash" in url:
+            return Response(503)
+        return Response(200, "fallback output")
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr(ai_layer.requests, "post", fake_post)
+    monkeypatch.setattr(ai_layer.time, "sleep", lambda *_: None)
+
+    assert ai_layer._generate("hello") == "fallback output"
+    assert any("gemini-3.8-flash" in u for u in urls)
+    assert any("gemini-3.7-flash" in u for u in urls)
