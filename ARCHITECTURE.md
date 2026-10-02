@@ -81,3 +81,10 @@ operator-reviewed playbook change
 ## Privacy and evidence boundary
 
 No patient-level health or clinical data is used. Synthetic transcripts contain only practice-operations feedback. Public data is practice-level official survey context. Real practice names/codes do not imply a Healthtech-1 customer or prospect relationship.
+
+## Reliability
+
+- Core customer states and queue priority remain deterministic even when the drafting provider is unavailable.
+- Gemini requests use bounded retries for transient 429/5xx responses and then a stable Flash-model fallback.
+- Drafting failures are surfaced to the operator instead of silently changing account state or sending anything externally.
+- Public-source verification and a full Streamlit-session check run separately from core tests so external source availability is observable without hiding application regressions.
