@@ -23,7 +23,7 @@ The role spans onboarding, adoption, upsell, product rollout, process building, 
 - Live 2026 GP Patient Survey practice-level integration; current schema verified against 6,166 practices.
 - Deterministic practice signals, upsell readiness, onboarding health, adoption health and queue priority.
 - Synthetic customer/adoption/value layer with explicit labelling.
-- Optional Gemini 3.8 Flash drafting/extraction layer with human review boundaries.
+- Live Gemini drafting/extraction layer with human-review boundaries, structured ticket output, retry/backoff and stable-model fallback.
 - Automated regression tests, Python compile checks, Streamlit runtime smoke test, live-source check and full Streamlit-session check.
 
 ## Claims not to make
