@@ -14,8 +14,8 @@ def main() -> None:
 
     # The redesigned workspace should render the operator-first landing page.
     markdown_text = "\n".join(str(item.value) for item in app.markdown)
-    assert "Today’s work queue" in markdown_text, "Operator work queue did not render"
-    print("STREAMLIT SESSION OK: operator workspace rendered without exceptions")
+    assert "THE DATA" in markdown_text and "WHAT NEXT?" in markdown_text, "Interactive case landing did not render"
+    print("STREAMLIT SESSION OK: interactive case landing rendered without exceptions")
 
 
 if __name__ == "__main__":
