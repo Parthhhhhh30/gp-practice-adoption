@@ -15,7 +15,9 @@ test('real API-backed GraphQL diagnosis and closure gate',async({page})=>{
   expect(requests).toHaveLength(2);expect(requests.every(x=>x.status===200)).toBeTruthy();
   await page.getByRole('button',{name:/Record verified outcome/}).click();
   await page.locator('#note').fill('GraphQL returned HTTP 200 but an application-level missing-draftId error. Corrected and verified with a retest.');
+  console.log('NOTE BEFORE',await page.locator('#note').inputValue());
   await page.getByRole('button',{name:'Save evidence notes'}).click();
+  console.log('NOTE AFTER',await page.locator('#note').inputValue());
   await page.getByRole('button',{name:'Customer response'}).click();
   await page.getByRole('button',{name:/Check and approve draft/}).click();
   await page.getByRole('button',{name:'Activity record'}).click();
