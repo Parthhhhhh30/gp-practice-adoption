@@ -17,6 +17,7 @@ from rules import (
     upsell_readiness,
 )
 from synthetic import customer_accounts, transcripts
+from story import render_story
 
 
 STYLE = """
@@ -326,19 +327,38 @@ def run():
     st.markdown(STYLE, unsafe_allow_html=True)
     public, accounts, tags_for, phone_median, digital_median, list_available, list_q75, public_error = prepare_data()
 
-    st.markdown('<div class="topbar"><div class="brandline"><div class="brandmark">+</div><div><div class="brandname">Practice Growth Workspace</div><div class="brandsub">Adoption, rollout and product operations</div></div></div><div class="topmeta">Independent portfolio prototype<br>Public NHS context + simulated customer operations</div></div>', unsafe_allow_html=True)
-    section = st.segmented_control("Workspace", ["Today","Practices","Accounts","Adoption","Feedback","Playbook"], default="Today", label_visibility="collapsed") or "Today"
-    if public_error:
-        st.warning("Public GP Patient Survey refresh is unavailable in this session. Synthetic customer-operations modules remain usable.")
+    st.markdown('<div class="topbar"><div class="brandline"><div class="brandmark">↗</div><div><div class="brandname">Practice / Signal</div><div class="brandsub">GP practice access, onboarding & adoption</div></div></div><div class="topmeta">Independent technical exercise<br>Public GPPS evidence + fictional customer operations</div></div>', unsafe_allow_html=True)
 
-    if section == "Today": render_today(accounts)
-    elif section == "Practices": render_practices(public, tags_for, phone_median, digital_median, list_available, list_q75)
-    elif section == "Accounts": render_accounts(accounts)
-    elif section == "Adoption": render_adoption(accounts)
-    elif section == "Feedback": render_feedback()
-    else: render_playbook()
+    choices = ["Start here", "Today", "Practices", "Accounts", "Adoption", "Feedback", "Playbook"]
+    if "workspace_nav" not in st.session_state:
+        st.session_state.workspace_nav = "Start here"
+
+    # Button callbacks run before widgets are created on the next Streamlit rerun.
+    # Keep one navigation state shared by the landing journey and the workbench.
+    def go_to(section: str) -> None:
+        if section not in choices:
+            raise ValueError("Unknown workspace route")
+        st.session_state.workspace_nav = section
+
+    section = st.segmented_control(
+        "Workspace", choices, key="workspace_nav", label_visibility="collapsed"
+    ) or "Start here"
+
+    # A public GPPS outage must not prevent the reader reaching synthetic modules.
+    # The landing page handles this visibly, without inserting fake public figures.
+    if section == "Start here":
+        render_story(public, accounts, go_to)
+    else:
+        if public_error:
+            st.warning("Public GP Patient Survey refresh is unavailable in this session. Synthetic customer-operations modules remain usable.")
+        if section == "Today": render_today(accounts)
+        elif section == "Practices": render_practices(public, tags_for, phone_median, digital_median, list_available, list_q75)
+        elif section == "Accounts": render_accounts(accounts)
+        elif section == "Adoption": render_adoption(accounts)
+        elif section == "Feedback": render_feedback()
+        else: render_playbook()
 
     st.divider()
     left,right = st.columns(2)
-    with left: st.caption("Independent portfolio prototype. Healthtech-1 is not affiliated with or responsible for this project.")
-    with right: st.caption(f"Drafting service: {'connected' if drafting_available() else 'local fallback'} · No patient-level or clinical data")
+    with left: st.caption("Independent prototype. Public practice data is not a customer list. No affiliation with any named software supplier.")
+    with right: st.caption(f"Drafting assistance: {'key configured' if drafting_available() else 'local fallback'} · No patient-level data")

@@ -1,79 +1,62 @@
-# GP Practice Adoption & Growth OS
+# Practice / Signal — GP Practice Adoption & Operations
 
-Independent portfolio prototype inspired by Healthtech-1's Special Projects Associate role.
+**Live:** https://gp-practice-adoption.streamlit.app/  
+**Project:** An independent interactive exploration of GP access signals and simulated customer-operations decisions.
 
-**Live app:** https://gp-practice-adoption.streamlit.app/
+The first screen is a guided case, not a generic analytics dashboard: choose an evidence problem, make an operational decision, inspect the explanation, and open the corresponding working module. The palette and visual approach are original to this project; the live Streamlit operations tool remains available behind the narrative.
 
-The project demonstrates a joined-up operating system for the customer journey:
+## Start with the difference between a fact and an assumption
 
-**public NHS practice context → transparent access signals → synthetic upsell/onboarding workflow → adoption & value tracking → customer feedback → draft product tickets → playbook improvements**
+- **Public evidence:** The 2026 GP Patient Survey provides practice-level measures for phone, website and NHS App access. Where available, the app displays sourced practice-level context. Survey results do **not** identify a software supplier, a genuine customer or commercial intent.
+- **Simulated account operations:** Twelve seeded fictional customer profiles demonstrate readiness, activation risks, adoption, customer feedback and follow-up. Practice names used as public context are **not** evidence of a supplier/customer relationship.
+- **Real application behaviour:** Deterministic rules identify cases requiring attention. Interactive next-action examples show why operators should verify evidence rather than make unsupported claims. These choices are educational and **do not modify** customer records.
+- **Optional AI drafting:** Server-side Gemini integration can generate draft discovery briefs, reviewable outreach and product-issue tickets. Humans approve external communications, commercial decisions and backlog changes. No automatic send, CRM write or clinical action is performed.
 
-## Product principle
+## Recruiter / reviewer journey
 
-This is designed as a **customer-operations workspace**, not an "AI dashboard". The interface starts with work that needs attention: account risk, activation, value review, expansion readiness and recurring customer friction.
+1. Open **Start here**. Read the evidence distinction and observed survey-data summary.
+2. Change the scenario between **Public access**, **Rollout risk** and **Customer feedback**. Choose a next action and inspect the rationale.
+3. Open **Practices** for survey evidence and filtering. No fabricated source counts appear if the feed is unavailable.
+4. Open **Accounts**, **Adoption** and **Feedback** to inspect simulated operations, real rule logic and human-owned follow-up.
+5. Open **Playbook** to see how recurring fictional customer friction informs a repeatable improvement process.
 
-Automation is intentionally split by responsibility:
+## Underlying workspaces
 
-- **Deterministic rules:** lifecycle states, readiness, risk, thresholds and KPI calculations.
-- **Drafting assistance:** discovery briefs, reviewable customer outreach and feedback-to-ticket drafts.
-- **Human decisions:** external communication, account prioritisation, upsell decisions and product/backlog actions.
+| Workspace | What is implemented |
+| --- | --- |
+| Today | Rule-driven prioritisation of synthetic account issues and opportunities |
+| Practices | Real public GP Patient Survey data and transparent access-signal labels |
+| Accounts | Synthetic customer status, activation and product-readiness logic |
+| Adoption | Fictional usage, time-to-value and value-review observations |
+| Feedback | Fictional notes, recurring-theme aggregation and reviewable AI-assisted ticket drafts |
+| Playbook | Onboarding and support-process improvement suggestions |
 
-## Evidence boundary
+## Design and architecture
 
-- **Real public context:** 2026 GP Patient Survey practice-level access measures. The current live CSV schema has been verified in GitHub Actions against **6,166 practices**.
-- **Optional public enrichment:** NHS registered-patient totals. The NHS publication page currently blocks some cloud automation with HTTP 403, so list size safely remains blank when unavailable rather than being fabricated.
-- **Synthetic:** customer relationship, onboarding state, product usage, value measures, ROI-style evidence and customer-call transcripts.
-- A real practice name/code overlaid on a demo account does **not** imply that the practice is a Healthtech-1 customer or prospect.
-- **No patient-level or clinical data** is used.
+- Streamlit 1.64, Python, Pandas and custom responsive HTML/CSS for the opening case narrative.
+- Pure scenario-decision explanations tested in `tests/test_story.py`; existing workflow rules remain in `rules.py`.
+- The 2026 GPPS summary constructs “easy access” from the published **Very easy + Fairly easy** percentages. Data-source descriptions and limitations appear in [DATA_SOURCES.md](DATA_SOURCES.md).
+- Fixed synthetic fixtures in `synthetic.py`. No patient-level or clinical records enter the app.
+- Gemini credential resolution uses a server-side environment variable or Streamlit secrets; keys must **not** be placed in GitHub or browser code. There is no expectation of paid services to browse the demonstration.
 
-## Why this architecture
+## Limitations
 
-The target role centres on onboarding, adoption, upsell, product rollout, operational process-building, AI-assisted follow-up, customer insight and usage/churn tracking. The prototype therefore models those workflows rather than treating the job as a generic outbound-sales role.
+This is not a real implementation of SystmOne, a clinical data-migration tool, an NHS client delivery, or an audited service-quality intervention. The survey data is public and descriptive; the customer relationships and commercial outcomes are entirely fictional. Predicted savings, adoption measurements, onboarding phases and feedback transcripts are examples, not outcomes achieved with real practices.
 
-## Workspace
+An available free-tier API key does not guarantee unlimited no-cost inference. Review Google's project-level quotas and terms before enabling model-backed drafting.
 
-- **Today** — operator work queue driven by lifecycle/adoption rules.
-- **Practices** — real public practice context and transparent access-signal tags.
-- **Accounts** — simulated customer workspace, expansion readiness and onboarding state.
-- **Adoption** — synthetic activation, usage trajectory, time-to-value and 90-day value evidence.
-- **Feedback** — synthetic customer notes converted into reviewable draft product/operations issues.
-- **Playbook** — repeatable onboarding/adoption journey with suggested changes from recurring feedback themes.
-
-## Public-data logic
-
-The project does not create a black-box practice score. The 2026 GP Patient Survey publishes response options separately; the app calculates the **Easy** measure for phone, website and NHS App access as the published positive responses **Very easy + Fairly easy**. Practice tags are explicit rules relative to the observed distribution and are discovery signals only.
-
-See `DATA_SOURCES.md` for the source and limitation log.
-
-## Drafting assistance
-
-Gemini drafting is configured on the deployed app and has been exercised successfully. The integration uses retry/backoff for transient 429/5xx failures and a stable Flash fallback so a temporary provider-capacity event does not break the operator workflow. It supports:
-
-- discovery briefs
-- human-review outreach drafts
-- feedback-to-ticket drafting
-
-The app remains usable without an API key through deterministic/local fallbacks. No automatic send, CRM write or backlog creation occurs.
-
-## Run
+## Run and verify
 
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
-```
 
-Optional live drafting assistance:
-
-```bash
-export GEMINI_API_KEY="..."
-```
-
-## Quality checks
-
-```bash
 pytest -q
-python -m py_compile app.py workspace.py rules.py data_pipeline.py synthetic.py ai_layer.py scripts/verify_live_sources.py scripts/verify_streamlit_session.py scripts/verify_gemini.py
-python scripts/verify_live_sources.py
+python -m py_compile app.py workspace.py story.py rules.py synthetic.py data_pipeline.py ai_layer.py
 ```
 
-GitHub Actions also starts Streamlit headlessly and checks `/_stcore/health`. Live-source verification is separate from core CI so a third-party public-data outage cannot falsely make the application code appear broken.
+The repository includes GitHub Actions tests and a headless Streamlit health check. Tests using simulated model responses do not prove a live provider call; public-data availability is a separate check.
+
+## Development note
+
+Developed with AI-assisted programming and iterative testing. The code demonstrates an independent technical exercise, not unaided coding proficiency or real client implementation experience.

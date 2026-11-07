@@ -1,8 +1,8 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title="Practice Growth Workspace",
-    page_icon="+",
+    page_title="Practice / Signal — GP Operations",
+    page_icon="↗",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
