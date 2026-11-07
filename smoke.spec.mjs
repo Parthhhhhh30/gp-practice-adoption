@@ -5,7 +5,7 @@ test('real API-backed GraphQL diagnosis and closure gate',async({page})=>{
   await page.goto(url+'?desk=1');await expect(page.locator('#case-title')).toContainText('save that never saved');
   await page.getByRole('button',{name:'Activity record'}).click();
   await page.getByRole('button',{name:'Attempt verified closure'}).click();
-  await expect(page.locator('#tab-panel')).toContainText('Passing diagnostic');
+  await expect(page.locator('#tab-panel')).toContainText('A passing diagnostic');
   await page.getByRole('button',{name:'Investigate'}).click();
   await page.getByRole('button',{name:/Run diagnostic/}).click();
   await expect(page.locator('#tab-panel')).toContainText('GRAPHQL_VALIDATION_ERROR');
