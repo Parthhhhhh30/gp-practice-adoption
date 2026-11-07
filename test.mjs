@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {test} from 'node:test';
+import {fresh,diagnostic,canClose,validateEscalation,checkResponse,evaluateBaseline} from './rules.mjs';
+test('four fictional cases',()=>assert.equal(fresh().cases.length,4));
+test('hidden GraphQL error',()=>{let c=fresh().cases[1];assert.equal(diagnostic(c).pass,false);assert.match(diagnostic(c).lines.join(' '),/HTTP 200/);});
+test('fix requires retest',()=>{let c=fresh().cases[1];c.fault.missingId=false;assert.equal(diagnostic(c).pass,true);assert.equal(canClose(c).ok,false)});
+test('security escalation overrides engineering',()=>{let c=fresh().cases[2];c.note='A fictional access mismatch was observed and documented.';c.fault.security=true;assert.equal(validateEscalation(c,'Engineering','Possible information exposure requiring immediate specialist review.').ok,false);assert.equal(validateEscalation(c,'Security','Possible information exposure requiring immediate specialist review.').ok,true)});
+test('legal content requires qualified review',()=>{let c=fresh().cases[3];c.note='Unverified source reference present in drafted fictional patent text.';assert.equal(canClose(c).ok,false);assert.equal(validateEscalation(c,'Patent-domain specialist','Unsupported patent citation requires specialist verification.').ok,true)});
+test('closure requires verified checks and writing',()=>{let c=fresh().cases[0];c.fault.expired=false;c.verified=true;c.note='Session replaced and fictional workspace access verified successfully.';c.reply='We have checked the fictional session and confirmed that the workspace is available again.';c.replyApproved=true;assert.equal(canClose(c).ok,true)});
+test('unsafe promise detection',()=>assert.ok(checkResponse('Send us your password because the problem is definitely fixed and legally correct.').length));
+test('routing reference suite',()=>{let r=evaluateBaseline();assert.equal(r.length,8);assert.ok(r.every(x=>x.pass))});

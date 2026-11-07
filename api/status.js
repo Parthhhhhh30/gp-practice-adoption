@@ -1,0 +1,1 @@
+export default function handler(req,res){res.setHeader('Cache-Control','no-store');res.status(200).json({status:'ok',configured:process.env.CASEWORK_ALLOW_MODEL_CALLS==='true'&&!!process.env.GEMINI_API_KEY,app:'CASEWORK 2.0'})}
