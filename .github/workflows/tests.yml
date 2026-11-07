@@ -13,7 +13,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -r requirements.txt
-      - run: pytest -q
+      - run: pytest -q tests
       - run: python -m py_compile app.py workspace.py story.py rules.py data_pipeline.py synthetic.py ai_layer.py scripts/verify_live_sources.py scripts/verify_streamlit_session.py scripts/verify_gemini.py
       - name: Smoke test Streamlit runtime
         run: |
