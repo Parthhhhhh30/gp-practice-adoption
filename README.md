@@ -1,62 +1,63 @@
-# Practice / Signal — GP Practice Adoption & Operations
+# Practice / Signal
 
-**Live:** https://gp-practice-adoption.streamlit.app/  
-**Project:** An independent interactive exploration of GP access signals and simulated customer-operations decisions.
+**Live application:** https://practice-signal-gp.vercel.app/  
+**Operations workbench:** https://practice-signal-gp.vercel.app/workbench  
+**Previous Streamlit prototype:** https://gp-practice-adoption.streamlit.app/
 
-The first screen is a guided case, not a generic analytics dashboard: choose an evidence problem, make an operational decision, inspect the explanation, and open the corresponding working module. The palette and visual approach are original to this project; the live Streamlit operations tool remains available behind the narrative.
+Practice / Signal is an independent GP-practice access and customer-operations exercise. It uses 2026 GP Patient Survey practice-level results to explore reported access, then uses deliberately fictional customer records to demonstrate onboarding, support, adoption, and evidence-led follow-up.
 
-## Start with the difference between a fact and an assumption
+The live site is built for Vercel with a custom HTML/CSS/JavaScript interface and a Python FastAPI service. The earlier Streamlit implementation is retained as a separate, functional prototype.
 
-- **Public evidence:** The 2026 GP Patient Survey provides practice-level measures for phone, website and NHS App access. Where available, the app displays sourced practice-level context. Survey results do **not** identify a software supplier, a genuine customer or commercial intent.
-- **Simulated account operations:** Twelve seeded fictional customer profiles demonstrate readiness, activation risks, adoption, customer feedback and follow-up. Practice names used as public context are **not** evidence of a supplier/customer relationship.
-- **Real application behaviour:** Deterministic rules identify cases requiring attention. Interactive next-action examples show why operators should verify evidence rather than make unsupported claims. These choices are educational and **do not modify** customer records.
-- **Optional AI drafting:** Server-side Gemini integration can generate draft discovery briefs, reviewable outreach and product-issue tickets. Humans approve external communications, commercial decisions and backlog changes. No automatic send, CRM write or clinical action is performed.
+## Explore the live case
 
-## Recruiter / reviewer journey
+1. **Start with the question.** The homepage explains why a survey signal, a customer problem and a technical solution are not interchangeable.
+2. **Make a decision.** Select a public-access, rollout or feedback case. The live rules endpoint explains the decision without modifying customer records.
+3. **Inspect the source.** Explore reported practice-level GP Patient Survey access data. An unavailable feed is shown as unavailable, not replaced by invented figures.
+4. **Investigate operations.** Use the workbench to explore fictional account-readiness, adoption, support and product-feedback cases.
+5. **Follow the evidence.** View the reasons behind a rule result and a proposed next step before claiming progress.
 
-1. Open **Start here**. Read the evidence distinction and observed survey-data summary.
-2. Change the scenario between **Public access**, **Rollout risk** and **Customer feedback**. Choose a next action and inspect the rationale.
-3. Open **Practices** for survey evidence and filtering. No fabricated source counts appear if the feed is unavailable.
-4. Open **Accounts**, **Adoption** and **Feedback** to inspect simulated operations, real rule logic and human-owned follow-up.
-5. Open **Playbook** to see how recurring fictional customer friction informs a repeatable improvement process.
+## What is implemented
 
-## Underlying workspaces
+- **Vercel web app:** responsive, custom frontend; FastAPI endpoints for source data, account statuses, decisions and deterministic ticket drafts.
+- **Public evidence:** published practice-level GP Patient Survey access results and documented signal calculations.
+- **Simulated operations:** twelve fictional account profiles, support issues, usage figures, feedback notes, priority queues and illustrative time-to-value metrics.
+- **Rule-based decisions:** onboarding status, adoption health, expansion readiness, priority ordering and decision explanations computed in Python.
+- **Earlier Streamlit prototype:** a separate interactive Python workspace with an optional server-side Gemini drafting feature. This feature is **not connected to the Vercel edition**.
+- **Tests:** code checks for the Streamlit prototype and a dedicated FastAPI/API test workflow for the Vercel version.
 
-| Workspace | What is implemented |
-| --- | --- |
-| Today | Rule-driven prioritisation of synthetic account issues and opportunities |
-| Practices | Real public GP Patient Survey data and transparent access-signal labels |
-| Accounts | Synthetic customer status, activation and product-readiness logic |
-| Adoption | Fictional usage, time-to-value and value-review observations |
-| Feedback | Fictional notes, recurring-theme aggregation and reviewable AI-assisted ticket drafts |
-| Playbook | Onboarding and support-process improvement suggestions |
+## Boundaries
 
-## Design and architecture
+The public survey does not establish an individual practice's software supplier, commercial intent, customer relationship or need for a particular product. All customer accounts and business outcomes are simulated; no patient-level or clinical records are used.
 
-- Streamlit 1.64, Python, Pandas and custom responsive HTML/CSS for the opening case narrative.
-- Pure scenario-decision explanations tested in `tests/test_story.py`; existing workflow rules remain in `rules.py`.
-- The 2026 GPPS summary constructs “easy access” from the published **Very easy + Fairly easy** percentages. Data-source descriptions and limitations appear in [DATA_SOURCES.md](DATA_SOURCES.md).
-- Fixed synthetic fixtures in `synthetic.py`. No patient-level or clinical records enter the app.
-- Gemini credential resolution uses a server-side environment variable or Streamlit secrets; keys must **not** be placed in GitHub or browser code. There is no expectation of paid services to browse the demonstration.
+Neither version is a SystmOne integration, NHS clinical deployment, validated patient migration, production CRM or proven healthcare intervention. The Vercel draft-ticket feature is deterministic and **does not make a Gemini call**. Neither edition automatically sends communications, changes customer systems or makes clinical decisions.
 
-## Limitations
+This project was developed with AI-assisted programming and iterative testing. The code is an independent technical exercise, not evidence of unaided software development or completed client implementation work.
 
-This is not a real implementation of SystmOne, a clinical data-migration tool, an NHS client delivery, or an audited service-quality intervention. The survey data is public and descriptive; the customer relationships and commercial outcomes are entirely fictional. Predicted savings, adoption measurements, onboarding phases and feedback transcripts are examples, not outcomes achieved with real practices.
+## Repository structure
 
-An available free-tier API key does not guarantee unlimited no-cost inference. Review Google's project-level quotas and terms before enabling model-backed drafting.
+- `web/`: Vercel edition, FastAPI server, static site and API tests.
+- `app.py`, `workspace.py`, `story.py`: previous Streamlit interface.
+- `rules.py`, `synthetic.py`, `data_pipeline.py`: Python rules, fictional fixtures and GPPS source integration.
+- `ai_layer.py`: optional Streamlit Gemini-assisted drafting, requiring server-side credentials.
+- `tests/` and `web/tests/`: automated checks.
+- `ARCHITECTURE.md` and `DATA_SOURCES.md`: technical design and evidence definitions.
 
-## Run and verify
+## Run locally
 
-```bash
-pip install -r requirements.txt
-streamlit run app.py
-
-pytest -q
-python -m py_compile app.py workspace.py story.py rules.py synthetic.py data_pipeline.py ai_layer.py
+**Vercel edition (from `web/`):**
+```sh
+cd web
+python -m pip install -r requirements.txt uvicorn pytest httpx
+uvicorn server:app --reload
+# In another terminal:
+python -m pytest -q tests
 ```
 
-The repository includes GitHub Actions tests and a headless Streamlit health check. Tests using simulated model responses do not prove a live provider call; public-data availability is a separate check.
+**Streamlit prototype (from repository root):**
+```sh
+python -m pip install -r requirements.txt
+streamlit run app.py
+python -m pytest -q tests
+```
 
-## Development note
-
-Developed with AI-assisted programming and iterative testing. The code demonstrates an independent technical exercise, not unaided coding proficiency or real client implementation experience.
+No API key is required to use the Vercel edition. Do not commit private API keys or database credentials. An actual free-tier provider quota is governed by the owner's provider account and settings.

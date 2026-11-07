@@ -1,39 +1,32 @@
-# Practice / Signal — Vercel edition
+# Practice / Signal — Vercel application
 
-A standalone recruiter-facing experience using the original GP Practice Adoption
-domain logic. The existing Streamlit app is preserved; this project is the new
-primary presentation and operations workbench.
+The Vercel web edition is the primary interface for this independent GP-practice access and simulated customer-operations exercise.
 
-### Source boundaries
-- Public: practice-level results fetched on demand from 2026 GP Patient Survey;
-  unavailable data is shown as unavailable, never replaced with fictional figures.
-- Synthetic: twelve customer accounts, usage, adoption, feedback, time saved,
-  expansion, tickets and all outcomes.
-- No patient/clinical records, NHS integrations, external outreach or automated
-  commercial actions.
+**Live:** https://practice-signal-gp.vercel.app/  
+**Workbench:** https://practice-signal-gp.vercel.app/workbench
 
-### Routes
-- `/`: guided story with real interactive decision API.
-- `/workbench`: six operational modules.
-- `/api/overview`: rule-derived synthetic accounts and feedback.
-- `/api/practices`: public GPPS query with source and missing-data handling.
-- `/api/ticket`: deterministic simulated ticket draft; **not** a real AI call.
+## Routes
 
-### Operating limits
-No API key or paid plan is required. The original Streamlit repository retains
-its optional Gemini integration; it is **not** silently enabled on Vercel.
-There is no persistent authenticated customer database; case studies use
-fixed, deterministic synthetic data. Decisions are explanatory, not mutations.
+- `/`: responsive case introduction and interactive decisions.
+- `/workbench`: six simulated operations modules.
+- `/api/health`: server status.
+- `/api/overview`: rule-derived fictional account priorities and feedback themes.
+- `/api/practices`: sourced public GP Patient Survey practice-level exploration.
+- `/api/decision`: bounded educational decision explanations, no mutations.
+- `/api/ticket`: deterministic draft from a fictional note, no external write or model call.
 
-### Run locally
+## Data boundaries
+
+Survey measures are public observations; all customer accounts, adoption figures, savings, transcripts and decisions are simulated. An inaccessible public feed remains explicitly unavailable. No patient-level data, live NHS integration or commercial-customer outcomes are used.
+
+The earlier Streamlit application remains in the repository root with its optional Gemini-assisted drafting. The Vercel application **does not use that provider or require an API key**.
+
+## Local verification
+
 ```sh
-pip install -r requirements.txt
-pip install uvicorn pytest httpx
+python -m pip install -r requirements.txt uvicorn pytest httpx
 uvicorn server:app --reload
-pytest -q tests/
+python -m pytest -q tests
 ```
 
-### Visual language
-An original case-study identity with ink violet, lavender/cobalt, mint and
-warm melon. Interaction quality is benchmarked against LaunchLab, not its
-colours, copy, hierarchy or illustrated layout.
+See the root README for architecture, provenance and the earlier Streamlit implementation.

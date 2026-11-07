@@ -1,35 +1,36 @@
-# Data sources
+# Data sources and interpretation
 
-Research checked 2 October 2026.
+## GP Patient Survey 2026
 
-## GP Patient Survey 2026 — verified live core feed
+Practice-level GP Patient Survey results are published by Ipsos on behalf of NHS England. The app reads public practice codes, names, relevant ICS context and ease-of-contact measures for telephone, website and the NHS App.
 
-Practice-level GP Patient Survey results are published by Ipsos on behalf of NHS England. The project uses practice code/name, ICS name, and the 2026 ease-of-contact measures for phone, website and NHS App.
+The practice-level publication reports response options separately. The project derives an **easy** percentage from **Very easy + Fairly easy** rather than presenting an invented combined source field. Availability may vary by the source and runtime.
 
-The live CSV schema was verified in GitHub Actions against the current 2026 publication: **6,166 practices loaded successfully**. In the published practice CSV, the relevant variables are stored as separate response options (for example `localgpservicesphone_2.pct` and `_3.pct`); the project calculates the published-style **Easy** measure as **Very easy + Fairly easy** rather than relying on an invented combined field.
-
-Sources:
 - https://www.gp-patient.co.uk/latest-survey/results
 - https://www.gp-patient.co.uk/reporting-2026
 
-## Patients Registered at a GP Practice — optional enrichment
+The 2026 schema was previously verified using automated source checks. Any current record count or calculated median shown in the application must come from the feed actually retrieved, not a hardcoded number.
 
-NHS England publishes practice-level registered-patient totals. The project attempts to join the September 2026 totals to the GPPS practice data by practice code.
+## Optional NHS registered-patient counts (Streamlit edition)
 
-Source:
-- https://digital.nhs.uk/data-and-information/publications/statistical/patients-registered-at-a-gp-practice/september-2026
+The earlier prototype attempts an optional join with NHS England's September 2026 practice-level registered-patient totals by practice code:
 
-**Cloud-access limitation:** the NHS England publication page currently returns HTTP 403 to GitHub-hosted automated requests. The application therefore treats registered list size as an optional enrichment: if the source cannot be fetched, list size remains blank and no large-population signal is inferred. The verified GPPS access measures continue to load and the customer-operations workflow remains usable.
+https://digital.nhs.uk/data-and-information/publications/statistical/patients-registered-at-a-gp-practice/september-2026
 
-## Healthtech-1 public product context
+The source has sometimes rejected automated requests. Missing values remain missing; the application must not infer practice list size from unrelated measures.
 
-Bookable Search is publicly described as supporting new-patient discovery/booking, while Bookable Navigator is positioned around helping existing patients reach an appropriate service or appointment. Product references in this independent prototype are contextual only; no private Healthtech-1 data or integration is used.
+## Fixed fictional operations fixtures
 
-Source:
-- https://www.healthtech1.uk/bookable
+`synthetic.py` contains demonstration customer accounts, product readiness, adoption and feedback. These are invented for testing the system. Their account status, performance, time-to-value, commercial potential and savings are not sourced from GP Patient Survey, NHS suppliers or genuine customers.
 
-## Data boundary
+## Interpretation limits
 
-Public datasets do **not** reveal Healthtech-1's actual customer list, account status, product usage, pricing, churn, ROI, onboarding history or internal feedback. Those layers are synthetic in this portfolio project. A real GP practice name shown beside a demo account is only a public-context overlay and does not imply that the practice is a Healthtech-1 customer, prospect or user.
+A public practice name, code, score or ICS label does **not** prove:
+- which software supplier the practice uses;
+- a customer or prospect relationship;
+- the cause of an access problem;
+- any patient-level health information;
+- demand for any particular technology;
+- real adoption, revenue, churn or impact.
 
-No patient-level or clinical data is used anywhere in the project.
+The application does not use patient-level clinical data or real customer records. Its purpose is to demonstrate source-aware operational reasoning rather than diagnose practices or make external decisions.

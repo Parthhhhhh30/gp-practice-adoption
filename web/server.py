@@ -1,4 +1,4 @@
-"""Practice / Signal | portfolio-safe FastAPI backend.
+"""Practice / Signal | bounded FastAPI case-study backend.
 
 Public GP Patient Survey data is fetched from the official source.
 Customer accounts, adoption measures, feedback and issue drafts are ALWAYS simulated.

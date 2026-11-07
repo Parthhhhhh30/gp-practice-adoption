@@ -1,90 +1,47 @@
-# Architecture and control design
+# System architecture and decision boundaries
 
-## Problem framing
+## Two applications, one project
 
-The portfolio project is designed to prove four behaviours relevant to a startup operator/customer-growth role:
+The repository includes two separate interfaces sharing the same underlying Python rules and fictional GP operations model.
 
-1. use public evidence without pretending it reveals customer need;
-2. build repeatable onboarding/adoption operations;
-3. use AI for language and synthesis rather than hidden business logic;
-4. turn customer evidence into product and playbook improvements.
-
-## System flow
+**Primary Vercel edition — `web/`**
 
 ```text
-2026 GP Patient Survey
-        ↓
-practice-level public context
-        ↓
-transparent signal rules
-        ↓
-synthetic customer portfolio
-        ↓
-upsell readiness + onboarding health
-        ↓
-operator work queue / account workspace
-        ↓
-activation + adoption + 90-day value evidence
-        ↓
-synthetic customer feedback
-        ↓
-draft product / operations issue
-        ↓
-recurring-theme counts
-        ↓
-operator-reviewed playbook change
+Browser (HTML/CSS/JavaScript)
+   ↓
+FastAPI (/api/health, /api/overview, /api/decision,
+         /api/practices, /api/ticket)
+   ├── 2026 GP Patient Survey public data (on-demand; may be unavailable)
+   └── deterministic onboarding / adoption / readiness rules
+           └── fixed synthetic account and feedback fixtures
 ```
 
-## Application structure
+The site is responsive and offers a guided case, three explanatory decisions, and a six-part workbench. Rules run on the server and decisions return a rationale. No account mutation or external communication is performed. Ticket drafting is a deterministic template, not AI generation.
 
-- `app.py` — minimal Streamlit entry point.
-- `workspace.py` — customer-operations interface and page orchestration.
-- `data_pipeline.py` — public-data fetching, schema parsing and safe enrichment.
-- `rules.py` — deterministic signal, readiness, onboarding and adoption rules.
-- `synthetic.py` — clearly labelled demo customer, usage/value and feedback data.
-- `ai_layer.py` — optional Gemini drafting/extraction layer.
-- `tests/` — rule, schema, drafting-contract, queue and end-to-end regression tests.
-- `scripts/verify_live_sources.py` — live public-source contract check.
-- `scripts/verify_streamlit_session.py` — full Streamlit session smoke check.
+**Earlier Streamlit edition — repository root**
 
-## Control boundary
+`app.py` loads `workspace.py`, `story.py`, `data_pipeline.py`, `rules.py` and `synthetic.py`. It also supports optional Gemini-assisted drafting in `ai_layer.py` when a key is configured securely in the runtime. That integration has not been migrated to Vercel.
 
-### Deterministic
-- public-data signal tags
-- upsell readiness state
-- onboarding health
-- adoption health
-- work-queue priority
-- KPI calculations
-- recurring-issue counts
+## What is observed versus simulated
 
-### AI-assisted
-- practice discovery brief
-- personalised outreach draft
-- transcript-to-ticket draft
+- **Public observations:** practice-level GP Patient Survey access measures, practice codes/names and ICS context where available.
+- **Simulated:** account relationships, onboarding progress, activation, product use, support issues, adoption, feedback, time savings, commercial opportunity and all outcomes.
+- **Human-owned:** contact with a real practice, any product priority, customer action, commercial decision or clinical judgement.
 
-### Human-owned
-- whether an account should be prioritised
-- external communication
-- commercial decision / upsell
-- final product-ticket scope and priority
-- playbook changes
-- any clinical, regulatory or patient-safety judgement
+These categories must not be conflated. A low reported access score is a reason to investigate, not evidence of a software fault or an established customer need.
 
-## Failure / degradation design
+## Graceful degradation
 
-- If the verified GP Patient Survey feed fails, the public-practice explorer reports that the source is unavailable; synthetic customer-operations modules remain usable.
-- If the NHS registered-patient enrichment is blocked, list size remains blank and no population-size signal is inferred.
-- If no Gemini key is configured, deterministic/local drafting fallbacks keep the workflow demonstrable.
-- No customer action, CRM write, outreach send or product-backlog write is automated by the prototype.
+- If the official survey feed cannot be reached, public information is marked unavailable. No synthetic substitute is silently inserted.
+- Fictional account and rule demonstrations remain accessible without a live survey feed.
+- The primary Vercel application requires no AI provider or API key.
+- The Streamlit edition's optional AI-drafting flow has a local fallback; drafts do not constitute completed actions.
+- All API inputs use bounded models or parameters; public cases are educational and cannot change real records.
 
-## Privacy and evidence boundary
+## Operational limitations
 
-No patient-level health or clinical data is used. Synthetic transcripts contain only practice-operations feedback. Public data is practice-level official survey context. Real practice names/codes do not imply a Healthtech-1 customer or prospect relationship.
+This is not an authenticated multi-user customer system and does not persist real customer state. It does not connect to NHS clinical software, store patient-level information, prove commercial ROI, or provide a compliance or fairness assessment. Real deployments would require authorised customer data, user identity and access controls, audit records, security reviews, clinical governance where applicable, and carefully defined success criteria.
 
-## Reliability
+## Verification
 
-- Core customer states and queue priority remain deterministic even when the drafting provider is unavailable.
-- Gemini requests use bounded retries for transient 429/5xx responses and then a stable Flash-model fallback.
-- Drafting failures are surfaced to the operator instead of silently changing account state or sending anything externally.
-- Public-source verification and a full Streamlit-session check run separately from core tests so external source availability is observable without hiding application regressions.
+`web/tests/test_api.py` checks the API contract using fictional fixtures. Root-level tests cover deterministic rules, data parsing and the earlier Streamlit app. See GitHub Actions for the actual results; source-availability tests and provider-backed generation should not be confused with mocked or deterministic tests.

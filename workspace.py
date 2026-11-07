@@ -216,7 +216,7 @@ def account_selector(accounts, key: str):
 
 def render_accounts(accounts):
     header("Customer growth", "Account workspace", "Open one simulated account, understand why it is ready or at risk, and move from evidence to a human-owned next action.")
-    st.caption("Customer state is synthetic. A real practice name is a public-context overlay only and does not imply a Healthtech-1 relationship.")
+    st.caption("Customer state is synthetic. A real practice name is public context only and does not imply a customer relationship with any software supplier.")
     a = account_selector(accounts, "account-workspace")
     st.markdown(f'<div class="card"><div class="queue-title">{safe(a.public_practice_name)}</div><div class="queue-sub">{safe(a.demo_customer_id)} · current product: {safe(a.current_product)}</div><div class="status-row">{pill(a.upsell_state,tone_for(a.upsell_state))}{pill(a.onboarding_health,tone_for(a.onboarding_health))}{pill(a.adoption_health,tone_for(a.adoption_health))}</div></div>', unsafe_allow_html=True)
 
@@ -261,7 +261,7 @@ def render_adoption(accounts):
         c1.metric("Time to first value", f"{int(a.time_to_first_value_days)} days")
         c2.metric("Automated / routed", f"{a.automated_or_routed_pct:.1f}%")
         st.metric("Illustrative staff time released", f"{int(a.staff_minutes_saved_weekly)} min/week")
-        st.caption("Synthetic demonstration measures, not Healthtech-1 performance claims.")
+        st.caption("Fictional demonstration measures, not observed customer outcomes.")
 
 
 def render_feedback():

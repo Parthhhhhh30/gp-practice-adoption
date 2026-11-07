@@ -1,4 +1,4 @@
-"""Recruiter-friendly entry journey for the GP operations prototype.
+"""Interactive introduction to the GP operations prototype.
 
 Public access observations are kept separate from synthetic accounts and training cases.
 The choice interaction is explanatory only: no customer records are mutated.
