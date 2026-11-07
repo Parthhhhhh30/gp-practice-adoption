@@ -130,7 +130,7 @@ def render_story(public: pd.DataFrame, accounts: pd.DataFrame, go_to) -> None:
     if public.empty:
         st.caption("Public survey data unavailable. No median or practice count is invented.")
 
-    st.markdown('<div class="story-wrap"><section class="story-section"><div class="story-index">02 / TAKE A DECISION</div><h2 class="story-title">Don't mistake a signal for a conclusion.</h2><p class="story-why">Three short cases expose different kinds of evidence. Choose a next action, then inspect the real workspace that supports it. This interaction explains the judgement—it does not modify customer records.</p></section></div>',unsafe_allow_html=True)
+    st.markdown('<div class="story-wrap"><section class="story-section"><div class="story-index">02 / TAKE A DECISION</div><h2 class="story-title">Do not mistake a signal for a conclusion.</h2><p class="story-why">Three short cases expose different kinds of evidence. Choose a next action, then inspect the real workspace that supports it. This interaction explains the judgement—it does not modify customer records.</p></section></div>',unsafe_allow_html=True)
     lens=st.segmented_control("Choose a scenario",LENSES,default="Public access",key="story-lens")
     lens=lens or "Public access"
     specs={
