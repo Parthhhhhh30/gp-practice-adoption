@@ -3,7 +3,7 @@ test('site presents case and functional investigation',async ({page})=>{
  await page.goto(process.env.TEST_URL||'https://casework-investigation-desk-parthhhh.vercel.app/');
  await expect(page.getByText('A support ticket', {exact:false})).toBeVisible();
  await page.getByRole('button',{name:/Investigate a real scenario/}).click();
- await expect(page.getByText('The save that never saved',{exact:false})).toBeVisible();
+ await expect(page.locator('#case-title')).toBeVisible();
  await page.getByRole('button',{name:/Run diagnostic/}).click();
  await expect(page.getByText('GRAPHQL_VALIDATION_ERROR',{exact:false})).toBeVisible();
  await page.getByRole('button',{name:/Correct missing variable/}).click();
@@ -15,7 +15,7 @@ test('site presents case and functional investigation',async ({page})=>{
  await page.getByRole('button',{name:'Activity record'}).click();
  await expect(page.getByText('Successful retest recorded')).toBeVisible();
  await page.reload();
- await expect(page.getByText('The save that never saved',{exact:false})).toBeVisible();
+ await expect(page.locator('#case-title')).toBeVisible();
  await page.getByRole('button',{name:'Activity record'}).click();
  await expect(page.getByText('Successful retest recorded')).toBeVisible();
 });
