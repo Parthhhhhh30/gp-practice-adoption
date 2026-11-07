@@ -19,7 +19,7 @@ test('real API-backed GraphQL diagnosis and closure gate',async({page})=>{
   await page.getByRole('button',{name:'Customer response'}).click();
   await page.getByRole('button',{name:/Check and approve draft/}).click();
   await page.getByRole('button',{name:'Activity record'}).click();
-  await expect(page.locator('#tab-panel')).toContainText('READY');
+  await expect(page.locator('#tab-panel')).toContainText('Closure gate: READY');
   await page.getByRole('button',{name:'Attempt verified closure'}).click();
   await expect(page.locator('#case-status')).toContainText('Resolved');
   await page.reload();await expect(page.locator('#case-status')).toContainText('Resolved');
