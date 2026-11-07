@@ -17,10 +17,10 @@ function heading(code,title,desc){return '<span class="panel-eyebrow">'+code+'</
 function diagnosticHTML(d){return '<div class="evidence-block">'+d.lines.map(esc).join('<br>')+'<br><br><strong>'+esc(d.label)+'</strong></div><p>'+esc(d.guidance)+'</p>'}
 function investigation(c){
  let d=c.diagnostics.at(-1),now=diagnostic(c),fix=c.kind==='login'?'Refresh fictional session':c.kind==='graphql'?'Correct missing variable':'Refresh fictional import snapshot';
- return heading('01 / INVESTIGATE','Test the failure before choosing the answer.','The test reads the actual fictional configuration; a user-visible success message is not the same as a passing diagnostic.')
+ return heading('01 / INVESTIGATE','Test the failure before choosing the answer.','The test calls a fictional server endpoint. Inspect the network response; HTTP success can still include an application error.')
  +card('<div class="meta">FICTIONAL CUSTOMER MESSAGE</div><p>“'+esc(c.customer)+'”</p><p><b>Expected:</b> '+esc(c.expected)+'</p>')
  +'<div class="two-col">'+card('<h3>Controlled test environment</h3><p>Inspect and reproduce. Make a change, then retest.</p>'+button('diagnose','Run diagnostic ↗')+(c.kind==='legal'?'':button('fix',fix,'secondary'))+(c.kind==='documents'?button('security','Simulate possible data exposure','warn'):''))+card('<h3>Record your investigation</h3>'+field('note','Findings, evidence and next steps',c.note)+button('note','Save evidence notes','secondary'))+'</div>'
- +(d?card('<small>LATEST TEST / '+when(d.at)+'</small><h3>'+(d.pass?'PASS':'FAIL')+'</h3>'+diagnosticHTML(d)+(d.pass?button('verify','Record verified outcome'):'<p class="meta">Fix or escalate before marking resolved.</p>')):card('<h3>No test executed yet</h3><p>Run the diagnostic to inspect the evidence.</p>'))
+ +(d?card('<small>LATEST TEST / '+when(d.at)+'</small><h3>'+(d.pass?'PASS':'FAIL')+'</h3>'+diagnosticHTML(d)+(d.pass?button('verify','Record verified outcome'):'<p class="meta">Fix or escalate before marking resolved.</p>')):card('<h3>No test executed yet</h3><p>Run the controlled server request to inspect the evidence.</p>'))
  +(c.kind==='legal'?card('<h3>Patent-domain boundary</h3><p>Support cannot attest to the legality of an AI-generated argument. Preserve the concern and route for specialist review.</p>'):'');
 }
 function response(c){
@@ -62,7 +62,38 @@ function render(){
 async function action(key){
  let c=current();feedback='';
  if(key==='note'){c.note=$('note').value.trim();await change(c,'Investigation evidence recorded',c.note.slice(0,280));return}
- if(key==='diagnose'){let d=diagnostic(c);c.diagnostics.push({...d,at:nowIso()});c.verified=false;if(c.state==='New')c.state='Investigating';await change(c,'Diagnostic '+(d.pass?'passed':'failed'),d.lines.join(' | ').slice(0,600));return}
+ if(key==='diagnose'){
+  // The diagnostic now makes a genuine request to a bounded fictional service.
+  // No fallback can masquerade as a server response.
+  let d;
+  try {
+    const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),12000);
+    try {
+      if(c.kind==='graphql'){
+        const variables={settings:{review:true}};
+        if(!c.fault.missingId)variables.draftId='demo_42';
+        const response=await fetch('/api/graphql',{method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify({operationName:'UpdateDraftSettings',variables})});
+        const payload=await response.json();
+        if(!response.ok||!payload.simulation)throw Error('Fictional GraphQL service unavailable.');
+        const passed=Boolean(payload.data?.updateDraftSettings?.success)&&!payload.errors?.length;
+        d={pass:passed,category:'Client/API',label:passed?'MUTATION_OK':'GRAPHQL_VALIDATION_ERROR',
+        lines:['POST /api/graphql → HTTP '+response.status,'operation: UpdateDraftSettings','variables: '+JSON.stringify(variables),
+        passed?'response.data.updateDraftSettings.success: true':'response.errors: '+JSON.stringify(payload.errors||[])],
+        guidance:passed?'Fictional GraphQL mutation accepted and returned the updated value.':'HTTP 200 did not mean mutation success. Investigate the returned GraphQL errors.',
+        simulation:true,executedOn:'casework-graphql-server'};
+      }else{
+        const response=await fetch('/api/lab',{method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:c.kind,fault:c.fault})});
+        const payload=await response.json();
+        if(!response.ok||payload.simulation!==true||typeof payload.pass!=='boolean'||!Array.isArray(payload.lines))throw Error('Controlled investigation service unavailable.');
+        d=payload;
+      }
+    }finally{clearTimeout(timer)}
+  }catch(e){notice('Live diagnostic failed: '+e.message+' No local result was substituted.');return;}
+  c.diagnostics.push({...d,at:nowIso()});c.verified=false;
+  if(c.state==='New')c.state='Investigating';
+  await change(c,'Server diagnostic '+(d.pass?'passed':'failed'),d.lines.join(' | ').slice(0,600));
+  return;
+ }
  if(key==='fix'){
   if(c.kind==='legal'||c.fault.security){notice('This issue requires qualified specialist review.');return}
   if(c.kind==='login')c.fault.expired=false;if(c.kind==='graphql')c.fault.missingId=false;if(c.kind==='documents')c.fault.stale=false;
@@ -109,7 +140,7 @@ async function action(key){
  }
 }
 async function start(){
- try{db=await openDB();const previous=await read();if(previous?.version===MODEL_VERSION&&previous.cases?.length===4)state=previous;else await save()}catch(e){console.warn('Browser persistence unavailable',e);db=null;}
+ try{db=await openDB();const previous=await read();if(previous?.cases?.length===4){state=previous;state.version=MODEL_VERSION;await save();}else await save()}catch(e){console.warn('Browser persistence unavailable',e);db=null;}
  function enter(){ $('landing').hidden=true;$('desk').hidden=false;history.replaceState({},'','?desk=1');scrollTo(0,0);render()}
  function home(){ $('desk').hidden=true;$('landing').hidden=false;history.replaceState({},'','/');scrollTo(0,0)}
  $('begin').onclick=enter;$('enter-desk').onclick=enter;$('nav-desk').onclick=e=>{e.preventDefault();enter()};$('back-home').onclick=home;

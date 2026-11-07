@@ -1,5 +1,5 @@
 /* Independent CASEWORK simulation. All people, firms, issues and outcomes are fictional. */
-export const MODEL_VERSION = 'casework-2.0.1';
+export const MODEL_VERSION = 'casework-2.0.2';
 export const seeds = [
 {id:'CW-101',kind:'login',title:'Access ends after sign-in',firm:'Westbourne IP Chambers',person:'Maya Reed',role:'Associate',channel:'In-app chat',urgency:'Standard',customer:'I can sign in, but the application keeps sending me back to the login page. I need to review a draft this afternoon.',impact:'Attorney cannot reach their workspace.',fault:{expired:true},expected:'Refresh the fictional session and verify successful access.'},
 {id:'CW-204',kind:'graphql',title:'The save that never saved',firm:'Oak & Field Legal',person:'Oliver Hart',role:'Patent attorney',channel:'Email',urgency:'High',customer:'I changed the draft settings and clicked Save. The page confirmed it, but when I returned the values were unchanged. Can you investigate?',impact:'Requested changes are not persisted.',fault:{missingId:true},expected:'Inspect the successful HTTP response, find the GraphQL application error, repair the missing ID, and retest.'},
@@ -23,12 +23,16 @@ export function diagnostic(c){
 }
 export function validateEscalation(c,target,reason){
  const findings=diagnostic(c),e=[];
- if((reason||'').trim().length<35)e.push('Provide a specific issue summary (at least 35 characters).');
- if((c.note||'').trim().length<20)e.push('Record investigation evidence (at least 20 characters).');
+ const urgent=Boolean(c.fault?.security)&&target==='Security';
+ if(!urgent && (reason||'').trim().length<35)e.push('Provide a specific issue summary (at least 35 characters).');
+ if(!urgent && (c.note||'').trim().length<20)e.push('Record investigation evidence (at least 20 characters).');
+ // A real potential disclosure must be routed immediately, even if the operator
+ // has not yet completed routine documentation. Preserve a short safety summary when available.
  if(c.kind==='legal' && target!=='Patent-domain specialist')e.push('Questionable patent content must go to a qualified patent-domain reviewer.');
  if(c.fault?.security && target!=='Security')e.push('Potential exposure must be routed urgently to Security.');
  if(!c.fault?.security && c.kind!=='legal' && target==='Patent-domain specialist')e.push('Do not route technical access issues for legal correctness review.');
  if(c.kind==='graphql' && target==='Engineering' && !c.diagnostics.length)e.push('Include an executed diagnostic before engineering escalation.');
+ if(!urgent && !reason?.trim())e.push('Explain why this route is required.');
  return {ok:e.length===0,errors:e,priority:c.fault?.security?'Urgent security review':c.kind==='legal'?'Qualified-domain review':'Normal specialist review',label:findings.label};
 }
 export function canClose(c){
@@ -50,14 +54,14 @@ export function checkResponse(text){
 }
 export function baseline(c){
  const obs=diagnostic(c);
- const route=c.fault?.security?'Security':c.kind==='legal'?'Patent-domain specialist':c.kind==='graphql'?'Engineering':'Customer support';
+ const route=c.fault?.security?'Security':c.kind==='legal'?'Patent-domain specialist':c.kind==='graphql'?(c.fault?.missingId?'Engineering':'Customer support'):'Customer support';
  return {route,reason:obs.label,ask:c.kind==='login'?'Which browser and approximate time did the loop occur?':c.kind==='graphql'?'Can you confirm the affected fictional draft and steps?':c.kind==='documents'?'Which source revision do you expect to see?':'Which reference appears unsupported, and can a qualified reviewer inspect the original sources?'};
 }
 export const evalCases=[
 {kind:'login',state:{expired:true},expect:'Customer support',label:'Routine expiry'},
 {kind:'login',state:{expired:false},expect:'Customer support',label:'Verified session'},
 {kind:'graphql',state:{missingId:true},expect:'Engineering',label:'Reproducible mutation issue'},
-{kind:'graphql',state:{missingId:false},expect:'Engineering',label:'Post-fix confirmation'},
+{kind:'graphql',state:{missingId:false},expect:'Customer support',label:'Post-fix confirmation'},
 {kind:'documents',state:{stale:true,security:false},expect:'Customer support',label:'Stale imported snapshot'},
 {kind:'documents',state:{stale:false,security:true},expect:'Security',label:'Unexpected access boundary'},
 {kind:'legal',state:{unverified:true},expect:'Patent-domain specialist',label:'Unsupported legal citation'},
