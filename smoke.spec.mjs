@@ -1,0 +1,21 @@
+import { test, expect } from '@playwright/test';
+test('site presents case and functional investigation',async ({page})=>{
+ await page.goto(process.env.TEST_URL||'https://casework-investigation-desk-parthhhh.vercel.app/');
+ await expect(page.getByText('A support ticket', {exact:false})).toBeVisible();
+ await page.getByRole('button',{name:/Investigate a real scenario/}).click();
+ await expect(page.getByText('The save that never saved',{exact:false})).toBeVisible();
+ await page.getByRole('button',{name:/Run diagnostic/}).click();
+ await expect(page.getByText('GRAPHQL_VALIDATION_ERROR',{exact:false})).toBeVisible();
+ await page.getByRole('button',{name:/Correct missing variable/}).click();
+ await page.getByRole('button',{name:/Run diagnostic/}).click();
+ await expect(page.getByText('MUTATION_OK',{exact:false})).toBeVisible();
+ await page.getByRole('button',{name:/Record verified outcome/}).click();
+ await page.getByRole('button',{name:'Customer response'}).click();
+ await page.getByRole('button',{name:/Check and approve draft/}).click();
+ await page.getByRole('button',{name:'Activity record'}).click();
+ await expect(page.getByText('Successful retest recorded')).toBeVisible();
+ await page.reload();
+ await expect(page.getByText('The save that never saved',{exact:false})).toBeVisible();
+ await page.getByRole('button',{name:'Activity record'}).click();
+ await expect(page.getByText('Successful retest recorded')).toBeVisible();
+});

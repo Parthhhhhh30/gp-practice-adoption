@@ -1,0 +1,20 @@
+name: casework-browser-smoke
+on:
+  push:
+    branches: [casework-v2]
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save @playwright/test
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test smoke.spec.mjs --reporter=line
+        env:
+          TEST_URL: https://casework-investigation-desk-parthhhh.vercel.app/
