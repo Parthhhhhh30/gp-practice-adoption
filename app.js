@@ -8,7 +8,7 @@ function write(){return new Promise((ok,bad)=>{let r=db.transaction('cases','rea
 async function save(){if(db)await write();$('save-status').textContent=db?'AUTOSAVED / BROWSER LOCAL':'UNSAVED / SESSION ONLY'}
 const current=()=>state.cases.find(c=>c.id===chosen);
 function log(c,title,details){c.history.unshift({at:nowIso(),action:title,details});}
-async function change(c,title,details){log(c,title,details);feedback='';await save();render();}
+async function change(c,title,details){log(c,title,details);feedback='';render();await save();}
 function notice(s){feedback=s;render()}
 function button(action,label,cls=''){return '<button class="btn '+cls+'" data-action="'+action+'">'+label+'</button>'}
 function field(id,title,content,textarea=true){return '<div class="form-field"><label for="'+id+'">'+title+'</label>'+(textarea?'<textarea id="'+id+'">'+esc(content||'')+'</textarea>':'<input id="'+id+'" value="'+esc(content||'')+'">')+'</div>'}
